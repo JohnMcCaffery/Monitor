@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitor", "Monitor\Monitor.csproj", "{095C07F7-8EF6-44B9-8DB8-8C7FAF1A78AE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessList", "ProcessList\ProcessList.csproj", "{16362226-4716-4F79-BC56-A1D4B7081F2B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -13,6 +15,10 @@ Global
 		{095C07F7-8EF6-44B9-8DB8-8C7FAF1A78AE}.Debug|x86.Build.0 = Debug|x86
 		{095C07F7-8EF6-44B9-8DB8-8C7FAF1A78AE}.Release|x86.ActiveCfg = Release|x86
 		{095C07F7-8EF6-44B9-8DB8-8C7FAF1A78AE}.Release|x86.Build.0 = Release|x86
+		{16362226-4716-4F79-BC56-A1D4B7081F2B}.Debug|x86.ActiveCfg = Debug|x86
+		{16362226-4716-4F79-BC56-A1D4B7081F2B}.Debug|x86.Build.0 = Debug|x86
+		{16362226-4716-4F79-BC56-A1D4B7081F2B}.Release|x86.ActiveCfg = Release|x86
+		{16362226-4716-4F79-BC56-A1D4B7081F2B}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

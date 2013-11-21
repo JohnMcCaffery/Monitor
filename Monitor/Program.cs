@@ -5,27 +5,64 @@ using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
+using System.Diagnostics;
+using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace Monitor {
-    class Program {
-        private const string FOLDER = "Screenshots";
+    class Monitor {
+        private string opensim_directory = "C:\\Users\\openvirtualworlds\\Desktop\\Opensim-Timespan\\bin\\";
+
+        OpenSimMonitor opensim;
+        ChimeraMonitor chimera;
+        ClientMonitor clients;
+
+        Thread opensimThread;
 
         static void Main(string[] args) {
-            DateTime n = DateTime.Now;
-            string t = n.ToString("yyyy.MM.dd-HH.mm");
+            Monitor monitor = new Monitor();
+            monitor.StartServer();
 
-            if (!Directory.Exists(FOLDER))
-                Directory.CreateDirectory(FOLDER);
+            monitor.StartChimera();
+            monitor.WaitChimera();
 
-            foreach (var s in Screen.AllScreens) {
-                using (Bitmap mScreenshot = new Bitmap(s.Bounds.Width, s.Bounds.Height)) {
-                    using (Graphics g = Graphics.FromImage(mScreenshot)) {
-                        g.CopyFromScreen(s.Bounds.Location, Point.Empty, s.Bounds.Size);
-                        String f = FOLDER + "/" + t + "-" + s.DeviceName.Replace("\\", "").Trim('.') + ".bmp";
-                        mScreenshot.Save(f);
-                    }
-                }
-            }
+            monitor.StopServer();
+        }
+
+        public Monitor()
+        {
+            opensim = new OpenSimMonitor(opensim_directory);
+            chimera = new ChimeraMonitor("C:\\Users\\openvirtualworlds\\vierwer\\Chimera\\Bin\\", "Timespan.exe");
+            clients = new ClientMonitor();
+            clients.RegisterClient("Master");
+            clients.RegisterClient("Slave1");
+            clients.RegisterClient("Slave2");
+        }
+
+        public void StartServer()
+        {
+            opensim.start();
+            opensimThread = new Thread(new ThreadStart(opensim.Monitor));
+            opensimThread.Start();
+        }
+
+        public void StopServer()
+        {
+            opensim.Stop();
+            opensimThread.Join();
+        }
+
+        public void StartChimera()
+        {
+            chimera.start();
+            clients.Start();
+        }
+
+        public int WaitChimera()
+        {
+            int ret = chimera.Wait();
+            clients.Stop();
+            return ret;
         }
     }
 }
