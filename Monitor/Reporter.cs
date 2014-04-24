@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.IO;
@@ -9,14 +10,45 @@ using System.Windows.Forms;
 using System.Net;
 using System.Configuration;
 using System.Web;
+using System.Threading;
 
 namespace Monitor
 {
     class Reporter
     {
+        private static BlockingCollection<Report> MessageQueue = new BlockingCollection<Report>();
         private const string FOLDER = "Screenshots";
         private static string serverStr = ConfigurationManager.AppSettings["server"];
         private static string id = ConfigurationManager.AppSettings["id"];
+        private bool shutingdown = false;
+        private static Reporter instance;
+        private Thread sender;
+        private Thread heartbeat;
+        private ManualResetEvent waitHandle = new ManualResetEvent(false);
+
+        public static void start()
+        {
+            instance = new Reporter();
+            instance.startSender();
+        }
+
+        public static void Stop()
+        {
+            instance.shutingdown = true;
+            instance.waitHandle.Set();
+        }
+
+        private Reporter()
+        {
+            sender = new Thread(new ThreadStart(SendQueue));
+            heartbeat = new Thread(new ThreadStart(HeartBeat));
+        }
+
+        private void startSender()
+        {
+            sender.Start();
+            heartbeat.Start();
+        }
 
         public static void ReportExit(string name)
         {
@@ -24,7 +56,7 @@ namespace Monitor
             args["id"] = id;
             args["command"] = "ProgramExit";
             args["program"] = name;
-            SendPost(serverStr, null, args);
+            EnquePost(serverStr, null, args);
         }
 
         public static void ReportExit(string name, int exitcode)
@@ -35,9 +67,8 @@ namespace Monitor
             args["program"] = name;
             args["exitCode"] = "" + exitcode;
             List<FileParameter> images = null;
-            if (exitcode != 0)
-                images = Reporter.TakeScreenShot();
-            SendPost(serverStr, images, args);
+            images = Reporter.TakeScreenShot();
+            EnquePost(serverStr, images, args);
         }
 
         public static void ReportStart(string program)
@@ -46,7 +77,7 @@ namespace Monitor
             args["id"] = id;
             args["command"] = "ProgramStart";
             args["program"] = program;
-            SendPost(serverStr, null, args);
+            EnquePost(serverStr, null, args);
         }
 
         public static void ReportStartBegin(string program)
@@ -55,7 +86,7 @@ namespace Monitor
             args["id"] = id;
             args["command"] = "ProgramStartBegin";
             args["program"] = program;
-            SendPost(serverStr, null, args);
+            EnquePost(serverStr, null, args);
         }
 
         public static void ReportStartEnd(string program)
@@ -64,7 +95,7 @@ namespace Monitor
             args["id"] = id;
             args["command"] = "ProgramStartEnd";
             args["program"] = program;
-            SendPost(serverStr, null, args);
+            EnquePost(serverStr, null, args);
         }
 
         public static List<FileParameter> TakeScreenShot()
@@ -86,6 +117,7 @@ namespace Monitor
                         string name = t + "-" + s.DeviceName.Replace("\\", "").Trim('.') + ".png";
                         String f = FOLDER + "/" + name;
                         mScreenshot.Save(f);
+                        mScreenshot.Dispose();
                         FileInfo info = new FileInfo(f);
                         FileParameter file = new FileParameter(info, name, "image/png");
                         images.Add(file);
@@ -106,13 +138,70 @@ namespace Monitor
                     args.Add("clients", client.Name);
                     args.Add(client.Name, client.Running.ToString());
                 }
-
-                SendPost(serverStr, null, args);
+                List<FileParameter> images = null;
+                images = Reporter.TakeScreenShot();
+                EnquePost(serverStr, images, args);
         }
 
-        private static WebResponse SendPost(string reqiestUriString, List<FileParameter> files, NameValueCollection formData)
+        private static void EnquePost(string requestUriString, List<FileParameter> files, NameValueCollection formData)
         {
-            WebRequest req = HttpWebRequest.Create(reqiestUriString);
+            Report report = new Report(requestUriString, files, formData);
+            MessageQueue.Add(report);
+        }
+
+        private void SendQueue()
+        {
+            Report report;
+            while (!shutingdown)
+            {
+                report = MessageQueue.Take();
+                try
+                {
+                    SendPost(report);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Failed to send report");
+                }
+            }
+            while (MessageQueue.TryTake(out report))
+            {
+                try
+                {
+                    SendPost(report);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Failed to send report");
+                }
+            }
+        }
+
+        private void HeartBeat()
+        {
+            while (!shutingdown)
+            {
+                EnqueuHeartBeat();
+                waitHandle.WaitOne(60000);
+            }
+        }
+
+        private void EnqueuHeartBeat()
+        {
+            NameValueCollection args = new NameValueCollection();
+            args["id"] = id;
+            args["command"] = "HeartBeat";
+            EnquePost(serverStr, null, args);
+        }
+
+        private static WebResponse SendPost(Report report)
+        {
+            return SendPost(report.RequestUriString, report.Files, report.FormData);
+        }
+
+        private static WebResponse SendPost(string requestUriString, List<FileParameter> files, NameValueCollection formData)
+        {
+            WebRequest req = HttpWebRequest.Create(requestUriString);
             string boundary = DateTime.Now.Ticks.ToString("x");
             byte[] data = PreparePostData(files, formData, boundary);
             req.Method = "POST";
@@ -186,6 +275,20 @@ namespace Monitor
                 this.fileInfo = fileInfo;
                 this.name = name;
                 ContentType = contenttype;
+            }
+        }
+
+        public class Report
+        {
+            public string RequestUriString { get; private set; }
+            public List<FileParameter> Files { get; private set; }
+            public NameValueCollection FormData { get; private set; }
+
+            public Report(string requestUriString, List<FileParameter> files, NameValueCollection formData)
+            {
+                this.RequestUriString = requestUriString;
+                this.Files = files;
+                this.FormData = formData;
             }
         }
     }

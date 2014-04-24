@@ -9,23 +9,40 @@ namespace Monitor
 {
     class ChimeraMonitor : ProcessMonitor
     {
-        ProcessStartInfo chimeraInfo;
-        Process chimeraProcess;
-        List<int> ports = new List<int>();
-        String program;
+        private ProcessStartInfo chimeraInfo;
+        private Process chimeraProcess;
+        private List<int> ports = new List<int>();
+        private String program;
+        private ClientMonitor clientMonitor;
 
         public ChimeraMonitor(string directory, string program)
         {
             this.program = program;
+            chimeraProcess = new Process();
             chimeraInfo = new ProcessStartInfo(directory + program);
-            chimeraInfo.WorkingDirectory = directory;
-            chimeraInfo.UseShellExecute = true;
+            chimeraProcess.StartInfo = chimeraInfo;
+            chimeraProcess.StartInfo.WorkingDirectory = directory;
+            chimeraProcess.StartInfo.UseShellExecute = false;
+            chimeraProcess.StartInfo.RedirectStandardError = true;
+            chimeraProcess.ErrorDataReceived += new DataReceivedEventHandler(OutputDataHandler);
+            chimeraProcess.StartInfo.RedirectStandardOutput = true;
+            chimeraProcess.OutputDataReceived += new DataReceivedEventHandler(ErrorDataHandler);
+        }
+
+        public ClientMonitor Clients
+        {
+            set
+            {
+                clientMonitor = value;
+            }
         }
 
         public void start()
         {
-            chimeraProcess = Process.Start(chimeraInfo);
+            chimeraProcess.Start();
             Reporter.ReportStart(program);
+            chimeraProcess.BeginOutputReadLine();
+            chimeraProcess.BeginErrorReadLine();
         }
 
         public int Wait()
@@ -39,6 +56,40 @@ namespace Monitor
         public void Stop()
         {
             chimeraProcess.CloseMainWindow();
+        }
+
+        private void OutputDataHandler(object sendingProcess,
+           DataReceivedEventArgs outLine)
+        {
+            if (!String.IsNullOrEmpty(outLine.Data))
+            {
+                Console.WriteLine(outLine.Data);
+            }
+        }
+
+        private void ErrorDataHandler(object sendingProcess,
+            DataReceivedEventArgs errLine)
+        {
+
+            if (!String.IsNullOrEmpty(errLine.Data))
+            {
+                Console.Error.WriteLine(errLine.Data);
+            }
+        }
+
+        private void PrcoessLine(string line)
+        {
+            /*if (line.Contains("Launching"))
+            {
+                Client client = clients.Find(
+                            delegate(Client cl)
+                            {
+                                return theprocess.MainWindowTitle.Contains(cl.Name);
+                            }
+                        );
+                if (client != null && !client.Running)
+                    client.Process = theprocess;
+            }*/
         }
     }
 }

@@ -15,6 +15,7 @@ namespace Monitor
     {
         ProcessStartInfo opensimInfo;
         Process opensimProcess;
+        object StartLock = new object();
         bool shutingdown = false;
         List<int> ports = new List<int>();
         Thread opensimStart;
@@ -27,7 +28,7 @@ namespace Monitor
 
             using (StreamReader sr = new StreamReader(directory + "Regions\\Regions.ini"))
             {
-                while (sr.EndOfStream)
+                while (!sr.EndOfStream)
                 {
                     String line = sr.ReadLine();
                     if (line != null && line.StartsWith("InternalPort = "))
@@ -49,6 +50,7 @@ namespace Monitor
 
         public void MonitorStart()
         {
+
              int found = 0;
              do
              {
@@ -60,24 +62,29 @@ namespace Monitor
                      if (ports.Contains(endpoint.Port))
                          found++;
                  }
+                 Console.WriteLine("Open Ports " + found + " "+ ports.Count);
                  Thread.Sleep(1000);
              } while (found < ports.Count);
+             AssignBottumWindow(opensimProcess.MainWindowHandle);
+             Thread.Sleep(60000);
              Reporter.ReportStartEnd("OpenSim");
+             lock (StartLock)
+             {
+                 System.Threading.Monitor.PulseAll(StartLock);
+             }
         }
 
         public void Monitor()
         {
-            opensimProcess.WaitForExit();
-            int exitCode = opensimProcess.ExitCode;
-            Reporter.ReportExit("OpenSim", exitCode);
-            if (exitCode != 0)
-            {
-                Reporter.TakeScreenShot();
+            do {
+                opensimProcess.WaitForExit();
+                int exitCode = opensimProcess.ExitCode;
+                Reporter.ReportExit("OpenSim", exitCode);
+                if (!shutingdown) {
+                    start();
+                }
             }
-            if (!shutingdown)
-            {
-                start();
-            }
+            while (!shutingdown);
         }
 
         public void Stop()
@@ -88,6 +95,12 @@ namespace Monitor
             SetForegroundWindow(opensimProcess.MainWindowHandle);
             Thread.Sleep(500);
             SendKeys.SendWait("shutdown\n");
+        }
+
+        public void WaitForStarted()
+        {
+            lock(StartLock)
+            System.Threading.Monitor.Wait(StartLock);
         }
     }
 }

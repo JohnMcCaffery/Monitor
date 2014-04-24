@@ -34,7 +34,7 @@ namespace Monitor
             {
                 if (notFound != 0)
                 {
-                    Process[] processlist = Process.GetProcessesByName("firestorm-bin");
+                    Process[] processlist = Process.GetProcessesByName("Firestorm-private-shutle01");
 
                     foreach (Process theprocess in processlist)
                     {
@@ -44,8 +44,10 @@ namespace Monitor
                                 return theprocess.MainWindowTitle.Contains(cl.Name);
                             }
                         );
-                        if (client != null  && !client.Running)
+                        if (client != null && !client.Running)
+                        {
                             client.Process = theprocess;
+                        }
                     }
                 }
                 Thread.Sleep(2000);
@@ -71,6 +73,15 @@ namespace Monitor
                 notFound++;
             Reporter.UpdateClientStatus(clients);
         }
+
+
+        public List<Client> Clinets
+        {
+            get
+            {
+                return clients;
+            }
+        }
     }
 
     class Client
@@ -92,6 +103,7 @@ namespace Monitor
                 process.EnableRaisingEvents = true;
                 process.Exited += new EventHandler(clientExited);
                 monitor.ClientStatusChange(true);
+                ProcessMonitor.ClickToFocus(process.MainWindowHandle);
             }
         }
 

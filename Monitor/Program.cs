@@ -8,10 +8,14 @@ using System.IO;
 using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Configuration;
 
 namespace Monitor {
     class Monitor {
-        private string opensim_directory = "C:\\Users\\openvirtualworlds\\Desktop\\Opensim-Timespan\\bin\\";
+        private string opensim_directory = ConfigurationManager.AppSettings["opensim_directory"];
+        private string chimera_directory = ConfigurationManager.AppSettings["chimera_directory"];
+        private string chimera_exec = ConfigurationManager.AppSettings["chimera_exec"];
+        private string[] client_names = ConfigurationManager.AppSettings["clients"].Split(',');
 
         OpenSimMonitor opensim;
         ChimeraMonitor chimera;
@@ -26,17 +30,25 @@ namespace Monitor {
             monitor.StartChimera();
             monitor.WaitChimera();
 
+            monitor.StopReporter();
+
             monitor.StopServer();
         }
 
         public Monitor()
         {
             opensim = new OpenSimMonitor(opensim_directory);
-            chimera = new ChimeraMonitor("C:\\Users\\openvirtualworlds\\vierwer\\Chimera\\Bin\\", "Timespan.exe");
+            chimera = new ChimeraMonitor(chimera_directory, chimera_exec);
             clients = new ClientMonitor();
-            clients.RegisterClient("Master");
-            clients.RegisterClient("Slave1");
-            clients.RegisterClient("Slave2");
+            foreach (string client in client_names)
+            {
+                clients.RegisterClient(client);
+            }
+            //clients.RegisterClient("Master");
+            //clients.RegisterClient("Slave1");
+            //clients.RegisterClient("Slave2");
+            chimera.Clients = clients;
+            Reporter.start();
         }
 
         public void StartServer()
@@ -44,6 +56,7 @@ namespace Monitor {
             opensim.start();
             opensimThread = new Thread(new ThreadStart(opensim.Monitor));
             opensimThread.Start();
+            opensim.WaitForStarted();
         }
 
         public void StopServer()
@@ -63,6 +76,11 @@ namespace Monitor {
             int ret = chimera.Wait();
             clients.Stop();
             return ret;
+        }
+
+        public void StopReporter()
+        {
+            Reporter.Stop();
         }
     }
 }
