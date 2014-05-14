@@ -109,19 +109,21 @@ namespace Monitor
             List<FileParameter> images = new List<FileParameter>();
             foreach (var s in Screen.AllScreens)
             {
-                using (Bitmap mScreenshot = new Bitmap(s.Bounds.Width, s.Bounds.Height))
-                {
-                    using (Graphics g = Graphics.FromImage(mScreenshot))
-                    {
-                        g.CopyFromScreen(s.Bounds.Location, Point.Empty, s.Bounds.Size);
-                        string name = t + "-" + s.DeviceName.Replace("\\", "").Trim('.') + ".png";
-                        String f = FOLDER + "/" + name;
-                        mScreenshot.Save(f);
-                        mScreenshot.Dispose();
-                        FileInfo info = new FileInfo(f);
-                        FileParameter file = new FileParameter(info, name, "image/png");
-                        images.Add(file);
+                try {
+                    using (Bitmap mScreenshot = new Bitmap(s.Bounds.Width, s.Bounds.Height)) {
+                        using (Graphics g = Graphics.FromImage(mScreenshot)) {
+                            g.CopyFromScreen(s.Bounds.Location, Point.Empty, s.Bounds.Size);
+                            string name = t + "-" + s.DeviceName.Replace("\\", "").Trim('.') + ".png";
+                            String f = FOLDER + "/" + name;
+                            mScreenshot.Save(f);
+                            mScreenshot.Dispose();
+                            FileInfo info = new FileInfo(f);
+                            FileParameter file = new FileParameter(info, name, "image/png");
+                            images.Add(file);
+                        }
                     }
+                } catch (Exception ex) {
+                    Console.WriteLine(ex.ToString());
                 }
             }
             return images;
