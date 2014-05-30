@@ -13,12 +13,14 @@ namespace Monitor
         int notFound;
         bool shutingdown;
         Thread findThread;
+        private string client_name;
 
-        public ClientMonitor()
+        public ClientMonitor(string client_name)
         {
             this.clients = new List<Client>();
             notFound = 0;
             shutingdown = false;
+            this.client_name = client_name;
         }
 
         public void RegisterClient(string name)
@@ -34,7 +36,7 @@ namespace Monitor
             {
                 if (notFound != 0)
                 {
-                    Process[] processlist = Process.GetProcessesByName("Firestorm-private-shutle01");
+                    Process[] processlist = Process.GetProcessesByName(client_name);
 
                     foreach (Process theprocess in processlist)
                     {

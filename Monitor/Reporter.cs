@@ -101,7 +101,7 @@ namespace Monitor
         public static List<FileParameter> TakeScreenShot()
         {
             DateTime n = DateTime.Now;
-            string t = n.ToString("yyyy.MM.dd-HH.mm");
+            string t = n.ToString("yyyy.MM.dd-HH.mm.ss.FFF");
 
             if (!Directory.Exists(FOLDER))
                 Directory.CreateDirectory(FOLDER);

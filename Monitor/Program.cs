@@ -16,6 +16,7 @@ namespace Monitor {
         private string chimera_directory = ConfigurationManager.AppSettings["chimera_directory"];
         private string chimera_exec = ConfigurationManager.AppSettings["chimera_exec"];
         private string[] client_names = ConfigurationManager.AppSettings["clients"].Split(',');
+        private string client_name = ConfigurationManager.AppSettings["client_name"];
 
         OpenSimMonitor opensim;
         ChimeraMonitor chimera;
@@ -39,7 +40,7 @@ namespace Monitor {
         {
             opensim = new OpenSimMonitor(opensim_directory);
             chimera = new ChimeraMonitor(chimera_directory, chimera_exec);
-            clients = new ClientMonitor();
+            clients = new ClientMonitor(client_name);
             foreach (string client in client_names)
             {
                 clients.RegisterClient(client);
