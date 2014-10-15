@@ -15,8 +15,12 @@ namespace Monitor
         Thread findThread;
         private string client_name;
 
-        public ClientMonitor(string client_name)
+        public ClientMonitor()
         {
+            
+        }
+
+        public void Init(string client_name) {
             this.clients = new List<Client>();
             notFound = 0;
             shutingdown = false;

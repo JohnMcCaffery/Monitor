@@ -20,19 +20,21 @@ namespace Monitor
         List<int> ports = new List<int>();
         Thread opensimStart;
 
-        public OpenSimMonitor(string directory)
+        public OpenSimMonitor()
         {
+           
+        }
+
+        public void Init(string directory) {
             opensimInfo = new ProcessStartInfo(directory + "OpenSim.exe");
             opensimInfo.WorkingDirectory = directory;
             opensimInfo.UseShellExecute = true;
+            ports.Clear();
 
-            using (StreamReader sr = new StreamReader(directory + "Regions\\Regions.ini"))
-            {
-                while (!sr.EndOfStream)
-                {
+            using (StreamReader sr = new StreamReader(directory + "Regions\\Regions.ini")) {
+                while (!sr.EndOfStream) {
                     String line = sr.ReadLine();
-                    if (line != null && line.StartsWith("InternalPort = "))
-                    {
+                    if (line != null && line.StartsWith("InternalPort = ")) {
                         string[] l = line.Split(' ');
                         ports.Add(Int32.Parse(l[2]));
                     }

@@ -14,19 +14,12 @@ namespace Monitor
         private List<int> ports = new List<int>();
         private String program;
         private ClientMonitor clientMonitor;
+        private string directory;
 
-        public ChimeraMonitor(string directory, string program)
+        public ChimeraMonitor()
         {
-            this.program = program;
-            chimeraProcess = new Process();
-            chimeraInfo = new ProcessStartInfo(directory + program);
-            chimeraProcess.StartInfo = chimeraInfo;
-            chimeraProcess.StartInfo.WorkingDirectory = directory;
-            chimeraProcess.StartInfo.UseShellExecute = false;
-            chimeraProcess.StartInfo.RedirectStandardError = true;
-            chimeraProcess.ErrorDataReceived += new DataReceivedEventHandler(OutputDataHandler);
-            chimeraProcess.StartInfo.RedirectStandardOutput = true;
-            chimeraProcess.OutputDataReceived += new DataReceivedEventHandler(ErrorDataHandler);
+            
+            
         }
 
         public ClientMonitor Clients
@@ -35,6 +28,22 @@ namespace Monitor
             {
                 clientMonitor = value;
             }
+        }
+
+        public void Init(string directory, string program) {
+            this.program = program;
+            this.directory = directory;
+            chimeraInfo = new ProcessStartInfo(directory + program);
+
+            chimeraProcess = new Process();
+            
+            chimeraProcess.StartInfo = chimeraInfo;
+            chimeraProcess.StartInfo.WorkingDirectory = directory;
+            chimeraProcess.StartInfo.UseShellExecute = false;
+            chimeraProcess.StartInfo.RedirectStandardError = true;
+            chimeraProcess.ErrorDataReceived += new DataReceivedEventHandler(OutputDataHandler);
+            chimeraProcess.StartInfo.RedirectStandardOutput = true;
+            chimeraProcess.OutputDataReceived += new DataReceivedEventHandler(ErrorDataHandler);
         }
 
         public void start()
